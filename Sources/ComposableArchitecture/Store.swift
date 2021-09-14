@@ -315,15 +315,16 @@ public final class Store<State, Action> {
   }
 
   public func scopeWithShared<SharedState, GlobalPrivateState, LocalPrivateState, LocalAction>(
-      state toLocalPrivateState: @escaping (GlobalPrivateState) -> LocalPrivateState,
-      action toGlobalAction: @escaping (LocalAction) -> Action
+    state toLocalPrivateState: @escaping (GlobalPrivateState) -> LocalPrivateState,
+    action toGlobalAction: @escaping (LocalAction) -> Action
   ) -> Store<CombinedState<SharedState, LocalPrivateState>, LocalAction>
   where State == CombinedState<SharedState, GlobalPrivateState> {
-      return self.scope(state: { globalState in
-          return CombinedState(
-              shared: globalState.shared,
-              private: toLocalPrivateState(globalState.private)
-          )
+    return self.scope(
+      state: { globalState in
+        return CombinedState(
+          shared: globalState.shared,
+          private: toLocalPrivateState(globalState.private)
+        )
       }, action: toGlobalAction)
   }
 
@@ -483,7 +484,9 @@ public final class Store<State, Action> {
     #endif
   }
 
-  func withContext<Context>(contextHandle: ContextHandle<Context>) -> Store<Merged<Context, State>, Action> {
+  func withContext<Context>(contextHandle: ContextHandle<Context>) -> Store<
+    Merged<Context, State>, Action
+  > {
     let localStore = self.scope(
       state: { Merged<Context, State>(context: contextHandle.context, state: $0) }
     )

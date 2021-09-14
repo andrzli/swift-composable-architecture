@@ -533,8 +533,8 @@ final class StoreTests: XCTestCase {
       }
       return .none
     }.withContext(contextHandle: contextHandle)
-    .pullback(state: \State.localCount1, action: /GlobalAction.local1, environment: { () })
-    
+      .pullback(state: \State.localCount1, action: /GlobalAction.local1, environment: { () })
+
     let childReducer2 = Reducer<Merged<Context, Int>, LocalAction, Void>.init { state, action, _ in
       switch action {
       case .incrementGlobal: state.globalCount += 1
@@ -542,11 +542,12 @@ final class StoreTests: XCTestCase {
       }
       return .none
     }.withContext(contextHandle: contextHandle)
-    .pullback(state: \State.localCount2, action: /GlobalAction.local2, environment: { () })
+      .pullback(state: \State.localCount2, action: /GlobalAction.local2, environment: { () })
 
     let parentReducer: Reducer<State, GlobalAction, Void> = .combine(childReducer1, childReducer2)
 
-    let parentStore: Store<State, GlobalAction> = .init(initialState: .init(localCount1: 0, localCount2: 0), reducer: parentReducer, environment: ())
+    let parentStore: Store<State, GlobalAction> = .init(
+      initialState: .init(localCount1: 0, localCount2: 0), reducer: parentReducer, environment: ())
 
     let childStore = parentStore.withContext(contextHandle: contextHandle)
 
@@ -568,18 +569,22 @@ final class StoreTests: XCTestCase {
     parentStore.send(.local1(.incrementLocal))
     parentStore.send(.local2(.incrementLocal))
 
-    XCTAssertNoDifference(globalStates, [
-      .init(localCount1: 0, localCount2: 0),
-      .init(localCount1: 1, localCount2: 0),
-      .init(localCount1: 1, localCount2: 1)
-    ])
+    XCTAssertNoDifference(
+      globalStates,
+      [
+        .init(localCount1: 0, localCount2: 0),
+        .init(localCount1: 1, localCount2: 0),
+        .init(localCount1: 1, localCount2: 1),
+      ])
 
-    XCTAssertNoDifference(mergedStates, [
-      .init(context: .init(globalCount: 0), state: .init(localCount1: 0, localCount2: 0)),
-      .init(context: .init(globalCount: 1), state: .init(localCount1: 0, localCount2: 0)),
-      .init(context: .init(globalCount: 2), state: .init(localCount1: 0, localCount2: 0)),
-      .init(context: .init(globalCount: 2), state: .init(localCount1: 1, localCount2: 0)),
-      .init(context: .init(globalCount: 2), state: .init(localCount1: 1, localCount2: 1))
-    ])
+    XCTAssertNoDifference(
+      mergedStates,
+      [
+        .init(context: .init(globalCount: 0), state: .init(localCount1: 0, localCount2: 0)),
+        .init(context: .init(globalCount: 1), state: .init(localCount1: 0, localCount2: 0)),
+        .init(context: .init(globalCount: 2), state: .init(localCount1: 0, localCount2: 0)),
+        .init(context: .init(globalCount: 2), state: .init(localCount1: 1, localCount2: 0)),
+        .init(context: .init(globalCount: 2), state: .init(localCount1: 1, localCount2: 1)),
+      ])
   }
 }

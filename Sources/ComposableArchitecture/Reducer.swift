@@ -977,7 +977,9 @@ public struct Reducer<State, Action, Environment> {
 }
 
 extension Reducer {
-  public func withContext<Context, PrivateState>(contextHandle: ContextHandle<Context>) -> Reducer<PrivateState, Action, Environment> where State == Merged<Context, PrivateState> {
+  public func withContext<Context, PrivateState>(contextHandle: ContextHandle<Context>) -> Reducer<
+    PrivateState, Action, Environment
+  > where State == Merged<Context, PrivateState> {
     return .init { state, action, environment in
       var mergedState = Merged<Context, PrivateState>(context: contextHandle.context, state: state)
       let effects = self.run(&mergedState, action, environment)
@@ -990,18 +992,18 @@ extension Reducer {
 
 @dynamicMemberLookup
 public struct Merged<Context, State> {
-    public var context: Context
-    public var state: State
+  public var context: Context
+  public var state: State
 
-    public subscript<T>(dynamicMember keyPath: WritableKeyPath<Context, T>) -> T {
-        get { self.context[keyPath: keyPath] }
-        set { self.context[keyPath: keyPath] = newValue }
-    }
+  public subscript<T>(dynamicMember keyPath: WritableKeyPath<Context, T>) -> T {
+    get { self.context[keyPath: keyPath] }
+    set { self.context[keyPath: keyPath] = newValue }
+  }
 
-    public subscript<T>(dynamicMember keyPath: WritableKeyPath<State, T>) -> T {
-        get { self.state[keyPath: keyPath] }
-        set { self.state[keyPath: keyPath] = newValue }
-    }
+  public subscript<T>(dynamicMember keyPath: WritableKeyPath<State, T>) -> T {
+    get { self.state[keyPath: keyPath] }
+    set { self.state[keyPath: keyPath] = newValue }
+  }
 }
 
 extension Merged: Equatable where Context: Equatable, State: Equatable {}
