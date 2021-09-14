@@ -118,6 +118,7 @@ public final class Store<State, Action> {
   var effectCancellables: [UUID: AnyCancellable] = [:]
   private var isSending = false
   private var parentCancellable: AnyCancellable?
+  private var contextCancellable: AnyCancellable?
   private let reducer: (inout State, Action) -> Effect<Action, Never>
   private var bufferedActions: [Action] = []
   #if DEBUG
@@ -313,6 +314,19 @@ public final class Store<State, Action> {
     self.scope(state: toLocalState, action: { $0 })
   }
 
+  public func scopeWithShared<SharedState, GlobalPrivateState, LocalPrivateState, LocalAction>(
+      state toLocalPrivateState: @escaping (GlobalPrivateState) -> LocalPrivateState,
+      action toGlobalAction: @escaping (LocalAction) -> Action
+  ) -> Store<CombinedState<SharedState, LocalPrivateState>, LocalAction>
+  where State == CombinedState<SharedState, GlobalPrivateState> {
+      return self.scope(state: { globalState in
+          return CombinedState(
+              shared: globalState.shared,
+              private: toLocalPrivateState(globalState.private)
+          )
+      }, action: toGlobalAction)
+  }
+
   /// Scopes the store to a publisher of stores of more local state and local actions.
   ///
   /// - Parameters:
@@ -467,5 +481,18 @@ public final class Store<State, Action> {
         """
       )
     #endif
+  }
+
+  func withContext<Context>(contextHandle: ContextHandle<Context>) -> Store<Merged<Context, State>, Action> {
+    let localStore = self.scope(
+      state: { Merged<Context, State>(context: contextHandle.context, state: $0) }
+    )
+
+    localStore.contextCancellable = contextHandle.$context.sink { [weak localStore] context in
+      guard let localStore = localStore else { return }
+      localStore.state.value.context = context
+    }
+
+    return localStore
   }
 }

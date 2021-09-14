@@ -217,6 +217,25 @@ final class ReducerTests: XCTestCase {
       .store(in: &self.cancellables)
     self.wait(for: [expectation], timeout: 0.1)
   }
+
+  func testContext() {
+    struct Context { var count: Int }
+    enum Action { case increment }
+
+    let contextHandle = ContextHandle(Context(count: 0))
+    let reducer: Reducer<Int, Action, Void> =
+      Reducer.init { mergedState, action, environment in
+        mergedState.count += 1
+        return .none
+      }
+      .withContext(contextHandle: contextHandle)
+
+    var state = 0
+    _ = reducer.run(&state, .increment, ())
+
+    XCTAssertEqual(state, 0)
+    XCTAssertEqual(contextHandle.context.count, 1)
+  }
 }
 
 enum DebugAction: Equatable {

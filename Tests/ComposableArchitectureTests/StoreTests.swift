@@ -507,4 +507,79 @@ final class StoreTests: XCTestCase {
         .child(2),
       ])
   }
+
+  func testContext() {
+    struct Context: Equatable { var globalCount: Int }
+    struct State: Equatable {
+      var localCount1: Int
+      var localCount2: Int
+    }
+    enum GlobalAction {
+      case local1(LocalAction)
+      case local2(LocalAction)
+    }
+
+    enum LocalAction {
+      case incrementGlobal
+      case incrementLocal
+    }
+
+    let contextHandle = ContextHandle(Context(globalCount: 0))
+
+    let childReducer1 = Reducer<Merged<Context, Int>, LocalAction, Void>.init { state, action, _ in
+      switch action {
+      case .incrementGlobal: state.globalCount += 1
+      case .incrementLocal: state.state += 1
+      }
+      return .none
+    }.withContext(contextHandle: contextHandle)
+    .pullback(state: \State.localCount1, action: /GlobalAction.local1, environment: { () })
+    
+    let childReducer2 = Reducer<Merged<Context, Int>, LocalAction, Void>.init { state, action, _ in
+      switch action {
+      case .incrementGlobal: state.globalCount += 1
+      case .incrementLocal: state.state += 1
+      }
+      return .none
+    }.withContext(contextHandle: contextHandle)
+    .pullback(state: \State.localCount2, action: /GlobalAction.local2, environment: { () })
+
+    let parentReducer: Reducer<State, GlobalAction, Void> = .combine(childReducer1, childReducer2)
+
+    let parentStore: Store<State, GlobalAction> = .init(initialState: .init(localCount1: 0, localCount2: 0), reducer: parentReducer, environment: ())
+
+    let childStore = parentStore.withContext(contextHandle: contextHandle)
+
+    var globalStates: [State] = []
+    var mergedStates: [Merged<Context, State>] = []
+
+    var cancellables: Set<AnyCancellable> = []
+
+    parentStore.state.removeDuplicates().sink { state in
+      globalStates.append(state)
+    }.store(in: &cancellables)
+
+    childStore.state.removeDuplicates().sink { state in
+      mergedStates.append(state)
+    }.store(in: &cancellables)
+
+    parentStore.send(.local1(.incrementGlobal))
+    parentStore.send(.local2(.incrementGlobal))
+    parentStore.send(.local1(.incrementLocal))
+    parentStore.send(.local2(.incrementLocal))
+
+    XCTAssertNoDifference(globalStates, [
+      .init(localCount1: 0, localCount2: 0),
+      .init(localCount1: 1, localCount2: 0),
+      .init(localCount1: 1, localCount2: 1)
+    ])
+
+    XCTAssertNoDifference(mergedStates, [
+      .init(context: .init(globalCount: 0), state: .init(localCount1: 0, localCount2: 0)),
+      .init(context: .init(globalCount: 1), state: .init(localCount1: 0, localCount2: 0)),
+      .init(context: .init(globalCount: 2), state: .init(localCount1: 0, localCount2: 0)),
+      .init(context: .init(globalCount: 2), state: .init(localCount1: 1, localCount2: 0)),
+      .init(context: .init(globalCount: 2), state: .init(localCount1: 1, localCount2: 1))
+    ])
+  }
 }
