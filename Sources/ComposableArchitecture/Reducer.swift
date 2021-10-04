@@ -1004,6 +1004,22 @@ public struct Merged<Context, State> {
     get { self.state[keyPath: keyPath] }
     set { self.state[keyPath: keyPath] = newValue }
   }
+
+  public subscript<T>(dynamicMember keyPath: WritableKeyPath<Context, T>) -> Merged<T, State> {
+    get { .init(context: self.context[keyPath: keyPath], state: self.state) }
+    set {
+      self.context[keyPath: keyPath] = newValue.context
+      self.state = newValue.state
+    }
+  }
+
+  public subscript<T>(dynamicMember keyPath: WritableKeyPath<State, T>) -> Merged<Context, T> {
+    get { .init(context: self.context, state: self.state[keyPath: keyPath]) }
+    set {
+      self.context = newValue.context
+      self.state[keyPath: keyPath] = newValue.state
+    }
+  }
 }
 
 extension Merged: Equatable where Context: Equatable, State: Equatable {}
