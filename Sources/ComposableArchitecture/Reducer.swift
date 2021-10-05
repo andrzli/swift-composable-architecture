@@ -1005,6 +1005,7 @@ public struct Merged<Context, State> {
     set { self.state[keyPath: keyPath] = newValue }
   }
 
+  /*
   public subscript<T>(dynamicMember keyPath: WritableKeyPath<Context, T>) -> Merged<T, State> {
     get { .init(context: self.context[keyPath: keyPath], state: self.state) }
     set {
@@ -1020,6 +1021,7 @@ public struct Merged<Context, State> {
       self.state[keyPath: keyPath] = newValue.state
     }
   }
+  */
 }
 
 extension Merged: Equatable where Context: Equatable, State: Equatable {}
