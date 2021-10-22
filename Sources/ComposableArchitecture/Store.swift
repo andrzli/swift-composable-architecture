@@ -484,7 +484,7 @@ public final class Store<State, Action> {
     #endif
   }
 
-  func withContext<Context>(contextHandle: ContextHandle<Context>) -> Store<
+  public func withContext<Context>(contextHandle: ContextHandle<Context>) -> Store<
     Merged<Context, State>, Action
   > {
     let localStore = self.scope(
